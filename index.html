@@ -448,10 +448,10 @@
             { id: 'p18', text: 'Axe', tag: 'Kyle Nguyen', category: 'Extras' }
         ],
         food: [
-            { id: 'f1', text: 'KBBQ', category: 'Meat' },
-            { id: 'f2', text: 'Burger', category: 'Meat' },
-            { id: 'f3', text: 'Sausages', category: 'Meat' },
-            { id: 'f4', text: 'Hot Dogs', category: 'Meat' },
+            { id: 'f1', text: 'KBBQ', category: 'Mains' },
+            { id: 'f2', text: 'Burger', category: 'Mains' },
+            { id: 'f3', text: 'Sausages', category: 'Mains' },
+            { id: 'f4', text: 'Hot Dogs', category: 'Mains' },
             { id: 'f5', text: 'Crepes', category: 'Snacks & Sides' },
             { id: 'f6', text: 'Fruits', category: 'Snacks & Sides' },
             { id: 'f7', text: 'Corn', category: 'Snacks & Sides' },
@@ -595,9 +595,7 @@
 
         // For shopping and packing, just render items without category labels
         if (listType === 'shopping' || listType === 'packing') {
-            const sortedKeys = Object.keys(items).sort((a, b) => {
-                return (items[a].text || '').localeCompare(items[b].text || '');
-            });
+            const sortedKeys = Object.keys(items).sort(); // Sort by ID (order added)
             for (const key of sortedKeys) {
                 const item = items[key];
                 const el = renderItem(key, item, listType);
@@ -665,7 +663,7 @@
 
             const itemsInCategory = groupedItems[category] || [];
             itemsInCategory.sort((a, b) => {
-                return (a.item.text || '').localeCompare(b.item.text || '');
+                return a.key.localeCompare(b.key); // Sort by ID (order added)
             });
 
             for (const { key, item } of itemsInCategory) {
@@ -705,9 +703,7 @@
             empty.style.color = '#8a8a7a';
             listContainer.appendChild(empty);
         } else {
-            const sortedKeys = Object.keys(items).sort((a, b) => {
-                return (items[a].text || '').localeCompare(items[b].text || '');
-            });
+            const sortedKeys = Object.keys(items).sort(); // Sort by ID (order added)
             for (const key of sortedKeys) {
                 const item = items[key];
                 const el = renderItem(key, item, `people.${person}`);
