@@ -749,17 +749,19 @@
     // ============================================================
     // FIREBASE OPERATIONS
     // ============================================================
-    function saveCheck(path, itemId, checked) {
-        const ref = database.ref(`cottagePlanner/${path}/${itemId}/checked`);
-        ref.set(checked);
-        updateStatus('saving...');
-        ref.then(() => {
+function saveCheck(path, itemId, checked) {
+    let cleanPath = path.replace(/\./g, '/');
+    const ref = database.ref(`cottagePlanner/${cleanPath}/${itemId}/checked`);
+    updateStatus('saving...');
+    ref.set(checked)
+        .then(() => {
             updateStatus('saved');
-        }).catch((error) => {
+        })
+        .catch((error) => {
             console.error('Error saving check:', error);
             updateStatus('error!');
         });
-    }
+}
 
     // ============================================================
     // SIMPLIFIED DELETE FUNCTION
