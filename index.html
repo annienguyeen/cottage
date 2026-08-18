@@ -595,7 +595,9 @@
 
         // For shopping and packing, just render items without category labels
         if (listType === 'shopping' || listType === 'packing') {
-            const sortedKeys = Object.keys(items).sort();
+            const sortedKeys = Object.keys(items).sort((a, b) => {
+                return (items[a].text || '').localeCompare(items[b].text || '');
+            });
             for (const key of sortedKeys) {
                 const item = items[key];
                 const el = renderItem(key, item, listType);
@@ -662,7 +664,9 @@
             container.appendChild(categoryLabel);
 
             const itemsInCategory = groupedItems[category] || [];
-            itemsInCategory.sort((a, b) => a.key.localeCompare(b.key));
+            itemsInCategory.sort((a, b) => {
+                return (a.item.text || '').localeCompare(b.item.text || '');
+            });
 
             for (const { key, item } of itemsInCategory) {
                 const el = renderItem(key, item, listType);
@@ -701,7 +705,9 @@
             empty.style.color = '#8a8a7a';
             listContainer.appendChild(empty);
         } else {
-            const sortedKeys = Object.keys(items).sort();
+            const sortedKeys = Object.keys(items).sort((a, b) => {
+                return (items[a].text || '').localeCompare(items[b].text || '');
+            });
             for (const key of sortedKeys) {
                 const item = items[key];
                 const el = renderItem(key, item, `people.${person}`);
@@ -774,8 +780,6 @@
         let path = listType;
         
         // Replace dots with slashes for Firebase paths
-        // people.Jenny Nguyen -> people/Jenny Nguyen
-        // people.Jenny Nguyen.subItems -> people/Jenny Nguyen/subItems
         path = path.replace(/\./g, '/');
         
         const fullPath = `cottagePlanner/${path}/${itemId}`;
@@ -788,7 +792,6 @@
             .then(() => {
                 console.log('Item deleted successfully');
                 updateStatus('deleted');
-                // Force a small refresh
                 setTimeout(() => {
                     updateStatus('ready');
                 }, 500);
