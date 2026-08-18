@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cottage Planner</title>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #f6f2e9;
+            margin: 0;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .planner {
+            max-width: 1300px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 500;
+            color: #2d4b2c;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 3px dashed #b8a58b;
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+            flex-wrap: wrap;
+        }
+        h1 small {
+            font-size: 1rem;
+            font-weight: 300;
+            color: #5f6b5a;
+            margin-left: auto;
+        }
+        .status-badge {
+            background: #8a9a82;
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 860px) {
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+        .card {
+            background: #fffcf7;
+            border-radius: 28px;
+            padding: 1.6rem 1.5rem 2rem;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid #ede6db;
+            transition: 0.15s;
+        }
+        .card:hover {
+            border-color: #cfc1b0;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid #e2d7c8;
+            padding-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .card-header h2 {
+            font-weight: 500;
+            font-size: 1.6rem;
+            margin: 0;
+            color: #2b3a28;
+            letter-spacing: -0.3px;
+        }
+        .card-header .badge {
+            background: #d6cdbc;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #2d3d2a;
+        }
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.4rem 0.4rem 0.4rem 0.8rem;
+            border-radius: 40px;
+            background: #faf7f1;
+            transition: 0.1s;
+            border: 1px solid transparent;
+        }
+        .list-item:hover {
+            background: #f3ede3;
+            border-color: #dacfc0;
+        }
+        .list-item input[type="checkbox"] {
+            width: 1.2rem;
+            height: 1.2rem;
+            accent-color: #3b6b3a;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .list-item label {
+            flex: 1;
+            font-size: 0.98rem;
+            padding: 0.2rem 0;
+            cursor: pointer;
+            color: #1f2c1d;
+            word-break: break-word;
+        }
+        .list-item .person-tag {
+            background: #d4c9b9;
+            border-radius: 40px;
+            padding: 0.1rem 0.7rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #2b3a26;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+            background: #e2d5c4;
+        }
+        .subnote {
+            font-size: 0.75rem;
+            color: #686a5e;
+            padding-left: 0.3rem;
+            font-weight: 400;
+        }
+        .category-label {
+            font-weight: 600;
+            color: #3b5a3a;
+            font-size: 0.85rem;
+            padding: 0.3rem 0 0.1rem 0.3rem;
+            border-bottom: 1px dashed #ddd2c2;
+            margin-top: 0.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .category-add-btn {
+            background: none;
+            border: 1px dashed #b8c9b0;
+            border-radius: 30px;
+            padding: 0.1rem 0.8rem;
+            color: #5a7a55;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .category-add-btn:hover {
+            background: #eaf3e6;
+            border-color: #6a8a65;
+        }
+        .sub-item {
+            padding-left: 2.2rem;
+            background: #f6f1e9;
+            border-radius: 30px;
+        }
+        .sub-item label {
+            font-size: 0.9rem;
+            color: #3d4a3a;
+        }
+        .person-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        @media (max-width: 500px) {
+            .person-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .person-card {
+            background: #f5efe7;
+            border-radius: 20px;
+            padding: 0.8rem 0.8rem 1rem;
+            border: 1px solid #e2d5c4;
+        }
+        .person-card h3 {
+            margin: 0 0 0.5rem 0.3rem;
+            font-weight: 500;
+            font-size: 1.1rem;
+            color: #2e412b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .person-card .list-item {
+            background: #fcf9f4;
+            padding: 0.2rem 0.4rem 0.2rem 0.7rem;
+            border-radius: 30px;
+        }
+        .person-card .list-item label {
+            font-size: 0.9rem;
+        }
+        .footer {
+            margin-top: 2.5rem;
+            font-size: 0.85rem;
+            color: #737a6b;
+            text-align: center;
+            border-top: 1px solid #ddd2c2;
+            padding-top: 1.5rem;
+        }
+        .add-item-area {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .add-item-area input {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            border: 1px solid #dacfc0;
+            background: #faf7f1;
+            font-size: 0.9rem;
+            min-width: 150px;
+        }
+        .add-item-area input:focus {
+            outline: none;
+            border-color: #8a9a82;
+        }
+        .add-item-area button {
+            padding: 0.5rem 1.2rem;
+            border-radius: 30px;
+            border: none;
+            background: #3b6b3a;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .add-item-area button:hover {
+            background: #2d522c;
+        }
+        .delete-item-btn {
+            background: #f0e8de;
+            border: 1px solid #d4c9b9;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            color: #b55a5a;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .delete-item-btn:hover {
+            background: #b55a5a;
+            color: white;
+            border-color: #b55a5a;
+        }
+        .empty-message {
+            color: #737a6b;
+            font-size: 0.85rem;
+            padding: 0.5rem 0.8rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+<div class="planner">
+    <h1>
+        Cottage Planner
+        <small>
+            Click to check · 
+            <span id="statusBadge" class="status-badge">loading</span>
+        </small>
+    </h1>
+
+    <div class="grid">
+        <!-- LEFT COLUMN: MAIN LISTS -->
+        <div class="left-col" style="display: flex; flex-direction: column; gap: 1.8rem;">
+            
+            <!-- SHOPPING LIST -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Shopping</h2>
+                    <span class="badge">main</span>
+                </div>
+                <div class="list-container" id="shoppingList"></div>
+                <div class="add-item-area">
+                    <input type="text" id="shoppingInput" placeholder="Add item...">
+                    <button onclick="addItem('shopping')">+ Add</button>
+                </div>
+            </div>
+
+            <!-- PACKING LIST -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Packing List</h2>
+                    <span class="badge">shared</span>
+                </div>
+                <div class="list-container" id="packingList"></div>
+                <div class="add-item-area">
+                    <input type="text" id="packingInput" placeholder="Add item...">
+                    <button onclick="addItem('packing')">+ Add</button>
+                </div>
+            </div>
+
+            <!-- FOOD & DRINKS -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Food & Drinks</h2>
+                    <span class="badge">menu</span>
+                </div>
+                <div class="list-container" id="foodList"></div>
+                <div class="add-item-area">
+                    <input type="text" id="foodInput" placeholder="Add item...">
+                    <button onclick="addItemWithCategory('food')">+ Add</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="right-col" style="display: flex; flex-direction: column; gap: 1.8rem;">
+            
+            <!-- WHAT YOU SHOULD BRING -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>What You Should Bring</h2>
+                    <span class="badge">everyone</span>
+                </div>
+                <div class="list-container" id="personalSharedList"></div>
+                <div class="add-item-area">
+                    <input type="text" id="personalSharedInput" placeholder="Add item...">
+                    <button onclick="addItemWithCategory('personalShared')">+ Add</button>
+                </div>
+            </div>
+
+            <!-- INDIVIDUAL PEOPLE LISTS -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Personal Lists</h2>
+                    <span class="badge">per person</span>
+                </div>
+                <div class="person-grid" id="personGrid"></div>
+                <div style="margin-top: 0.8rem; font-size: 0.8rem; color: #5e6b56; background: #eae3d7; padding: 0.2rem 1rem; border-radius: 30px; display: inline-block;">Click any item to check · saves automatically</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        a baddies cottage planner · made with luv
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // FIREBASE CONFIG
+    // ============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyADJ9VMremNYjAkQgcNMpqILOkqWCjJQXA",
+        authDomain: "cottage-8cb3d.firebaseapp.com",
+        databaseURL: "https://cottage-8cb3d-default-rtdb.firebaseio.com",
+        projectId: "cottage-8cb3d",
+        storageBucket: "cottage-8cb3d.firebasestorage.app",
+        messagingSenderId: "182255344839",
+        appId: "1:182255344839:web:6922922c57e39d9a5572e2"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // ============================================================
+    // PEOPLE LIST
+    // ============================================================
+    const PEOPLE = [
+        "Annie Nguyen",
+        "Albert Tran",
+        "Armand Corpuz",
+        "Kyle Nguyen",
+        "Christian Alexander San Jose",
+        "Christopher Quioque",
+        "Jenny Nguyen",
+        "Dylan Puscc"
+    ];
+
+    // ============================================================
+    // CATEGORY ORDER
+    // ============================================================
+    const CATEGORY_ORDER = {
+        food: ['Meat', 'Snacks & Sides', 'Drinks', 'Drugs'],
+        personalShared: ['Clothing', 'Toiletries', 'Accessories', 'Health']
+    };
+
+    // ============================================================
+    // DEFAULT ITEMS WITH CATEGORIES
+    // ============================================================
+
+    const DEFAULT_ITEMS = {
+        shopping: [
+            { id: 's1', text: 'Therma Cell' },
+            { id: 's2', text: 'Insect Repellent' }
+        ],
+        packing: [
+            { id: 'p1', text: 'First Aid Kit · Meds', tag: 'Jenny Nguyen', category: 'Essentials' },
+            { id: 'p2', text: 'Lanterns', tag: 'Annie Nguyen / Albert Tran', category: 'Essentials', sub: [{ id: 'p2a', text: 'Batteries' }] },
+            { id: 'p3', text: 'Cooler', category: 'Essentials', sub: [{ id: 'p3a', text: 'ICE' }] },
+            { id: 'p4', text: 'Garbage Bags', tag: 'Annie Nguyen', category: 'Essentials' },
+            { id: 'p5', text: 'Paper Towels', category: 'Essentials' },
+            { id: 'p6', text: 'Chairs', category: 'Essentials' },
+            { id: 'p7', text: 'Table Cloth', tag: 'Albert Tran', category: 'Essentials' },
+            { id: 'p8', text: 'Gazebo Net', category: 'Essentials' },
+            { id: 'p9', text: 'Tikki Torches', category: 'Essentials' },
+            { id: 'p10', text: 'Grill', category: 'Kitchen' },
+            { id: 'p11', text: 'Plates', category: 'Kitchen' },
+            { id: 'p11b', text: 'Utensils', category: 'Kitchen' },
+            { id: 'p12', text: 'Fishing Rods', category: 'Extras', sub: [{ id: 'p12a', text: 'Worms' }, { id: 'p12b', text: 'Flyers' }, { id: 'p12c', text: 'Tackle Box' }] },
+            { id: 'p13', text: 'Board Games', category: 'Extras' },
+            { id: 'p14', text: 'Air Mattress', note: '(if you want)', category: 'Extras' },
+            { id: 'p15', text: 'Camera', tag: 'Albert Tran', category: 'Extras' },
+            { id: 'p16', text: 'Speakers', tag: 'Kyle Nguyen / Albert Tran', category: 'Extras' },
+            { id: 'p17', text: 'Hammock', tag: 'Kyle Nguyen', category: 'Extras' },
+            { id: 'p18', text: 'Axe', tag: 'Kyle Nguyen', category: 'Extras' }
+        ],
+        food: [
+            { id: 'f1', text: 'KBBQ', category: 'Meat' },
+            { id: 'f2', text: 'Burger', category: 'Meat' },
+            { id: 'f3', text: 'Sausages', category: 'Meat' },
+            { id: 'f4', text: 'Hot Dogs', category: 'Meat' },
+            { id: 'f5', text: 'Crepes', category: 'Snacks & Sides' },
+            { id: 'f6', text: 'Fruits', category: 'Snacks & Sides' },
+            { id: 'f7', text: 'Corn', category: 'Snacks & Sides' },
+            { id: 'f8', text: 'Popcorn', category: 'Snacks & Sides' },
+            { id: 'f9', text: 'Alcohol', category: 'Drinks' },
+            { id: 'f10', text: 'Weed ???', category: 'Drugs' }
+        ],
+        personalShared: [
+            { id: 'w7', text: 'Swimsuit', category: 'Clothing' },
+            { id: 'w8', text: 'Shirt', category: 'Clothing' },
+            { id: 'w8a', text: 'Sweater', category: 'Clothing' },
+            { id: 'w9', text: 'Shorts', category: 'Clothing' },
+            { id: 'w9a', text: 'Pants', category: 'Clothing' },
+            { id: 'w10', text: 'Socks', category: 'Clothing' },
+            { id: 'w11', text: 'Towels', category: 'Clothing' },
+            { id: 'w12', text: 'Under Garments', category: 'Clothing' },
+            { id: 'w1', text: 'Sunscreen', category: 'Toiletries' },
+            { id: 'w2', text: 'Lotion', category: 'Toiletries' },
+            { id: 'w3', text: 'Hairbrush', category: 'Toiletries' },
+            { id: 'w4', text: 'Contacts', tag: 'Annie Nguyen', category: 'Toiletries', sub: [{ id: 'w4a', text: 'Contact Solution', tag: 'Annie Nguyen' }] },
+            { id: 'w5', text: 'Toothbrush', category: 'Toiletries', sub: [{ id: 'w5a', text: 'Toothpaste' }, { id: 'w5b', text: 'Floss' }] },
+            { id: 'w6', text: 'Deodorant', category: 'Toiletries' },
+            { id: 'w13', text: 'Hat', category: 'Accessories' },
+            { id: 'w13a', text: 'Sunglasses', category: 'Accessories' },
+            { id: 'w14', text: 'Charger', category: 'Accessories' },
+            { id: 'w15', text: 'EpiPen', tag: 'Christian Alexander San Jose', category: 'Health' },
+            { id: 'w16', text: 'Medicine (Advil, Tylenol, etc.)', category: 'Health' }
+        ]
+    };
+
+    const PERSON_DEFAULTS = {
+        "Annie Nguyen": [
+            { id: 'a1', text: 'Garbage Bags' },
+            { id: 'a2', text: 'Lanterns', sub: [{ id: 'a2a', text: 'Batteries' }] },
+            { id: 'a3', text: 'Contact Solution' }
+        ],
+        "Albert Tran": [
+            { id: 'al1', text: 'Lanterns', sub: [{ id: 'al1a', text: 'Batteries' }] },
+            { id: 'al2', text: 'Table Cloth' },
+            { id: 'al3', text: 'Camera' },
+            { id: 'al4', text: 'Speakers' }
+        ],
+        "Armand Corpuz": [],
+        "Kyle Nguyen": [
+            { id: 'k1', text: 'Speakers' },
+            { id: 'k2', text: 'Hammock' },
+            { id: 'k3', text: 'Axe' }
+        ],
+        "Christian Alexander San Jose": [
+            { id: 'ch1', text: 'EpiPen' }
+        ],
+        "Christopher Quioque": [],
+        "Jenny Nguyen": [
+            { id: 'j1', text: 'First Aid Kit', sub: [{ id: 'j1a', text: 'Meds' }] }
+        ],
+        "Dylan Puscc": []
+    };
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function updateStatus(text) {
+        const badge = document.getElementById('statusBadge');
+        if (badge) badge.textContent = text;
+    }
+
+    function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    }
+
+    // ============================================================
+    // RENDER FUNCTIONS
+    // ============================================================
+    function renderItem(itemId, itemData, listType, isSub = false) {
+        const div = document.createElement('div');
+        div.className = `list-item${isSub ? ' sub-item' : ''}`;
+        div.dataset.id = itemId;
+        div.dataset.listType = listType;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = itemId;
+        checkbox.checked = itemData.checked || false;
+        checkbox.addEventListener('change', function() {
+            saveCheck(listType, itemId, this.checked);
+        });
+
+        const label = document.createElement('label');
+        label.htmlFor = itemId;
+        label.textContent = itemData.text;
+        
+        if (itemData.tag) {
+            const tag = document.createElement('span');
+            tag.className = 'person-tag';
+            tag.textContent = itemData.tag;
+            label.appendChild(tag);
+        }
+        if (itemData.note) {
+            const note = document.createElement('span');
+            note.className = 'subnote';
+            note.textContent = itemData.note;
+            label.appendChild(note);
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-item-btn';
+        deleteBtn.textContent = '✕';
+        deleteBtn.title = 'Delete item';
+        deleteBtn.onclick = function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('Delete clicked for:', listType, itemId);
+            deleteItem(listType, itemId);
+        };
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        div.appendChild(deleteBtn);
+
+        return div;
+    }
+
+    function getCategoryOrder(listType) {
+        return CATEGORY_ORDER[listType] || [];
+    }
+
+    function renderList(containerId, listType, items) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        
+        const categoryOrder = getCategoryOrder(listType);
+
+        if (!items || Object.keys(items).length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-message';
+            empty.textContent = 'No items yet. Add some above!';
+            container.appendChild(empty);
+            return;
+        }
+
+        // For shopping and packing, just render items without category labels
+        if (listType === 'shopping' || listType === 'packing') {
+            const sortedKeys = Object.keys(items).sort();
+            for (const key of sortedKeys) {
+                const item = items[key];
+                const el = renderItem(key, item, listType);
+                container.appendChild(el);
+
+                if (item.subItems) {
+                    const subContainer = document.createElement('div');
+                    subContainer.style.marginLeft = '0.5rem';
+                    for (const subKey of Object.keys(item.subItems)) {
+                        const subEl = renderItem(subKey, item.subItems[subKey], `${listType}.subItems`, true);
+                        subContainer.appendChild(subEl);
+                    }
+                    container.appendChild(subContainer);
+                }
+            }
+            return;
+        }
+
+        // For lists with categories (food, personalShared)
+        const groupedItems = {};
+        const categories = new Set();
+        for (const [key, item] of Object.entries(items)) {
+            const cat = item.category || 'Other';
+            categories.add(cat);
+            if (!groupedItems[cat]) groupedItems[cat] = [];
+            groupedItems[cat].push({ key, item });
+        }
+
+        const sortedCategories = Array.from(categories).sort((a, b) => {
+            const idxA = categoryOrder.indexOf(a);
+            const idxB = categoryOrder.indexOf(b);
+            if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+            if (idxA === -1) return 1;
+            if (idxB === -1) return -1;
+            return idxA - idxB;
+        });
+
+        for (const category of sortedCategories) {
+            // Skip "Other" category if it's empty
+            if (category === 'Other') {
+                const itemsInCategory = groupedItems[category] || [];
+                if (itemsInCategory.length === 0) continue;
+            }
+            
+            const categoryLabel = document.createElement('div');
+            categoryLabel.className = 'category-label';
+            
+            const labelText = document.createElement('span');
+            labelText.textContent = category;
+            categoryLabel.appendChild(labelText);
+
+            const addBtn = document.createElement('button');
+            addBtn.className = 'category-add-btn';
+            addBtn.textContent = '+ add';
+            addBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const text = prompt(`Add item to "${category}":`);
+                if (text && text.trim()) {
+                    addItemWithCategoryAndCategory(listType, text.trim(), category);
+                }
+            });
+            categoryLabel.appendChild(addBtn);
+            
+            container.appendChild(categoryLabel);
+
+            const itemsInCategory = groupedItems[category] || [];
+            itemsInCategory.sort((a, b) => a.key.localeCompare(b.key));
+
+            for (const { key, item } of itemsInCategory) {
+                const el = renderItem(key, item, listType);
+                container.appendChild(el);
+
+                if (item.subItems) {
+                    const subContainer = document.createElement('div');
+                    subContainer.style.marginLeft = '0.5rem';
+                    for (const subKey of Object.keys(item.subItems)) {
+                        const subEl = renderItem(subKey, item.subItems[subKey], `${listType}.subItems`, true);
+                        subContainer.appendChild(subEl);
+                    }
+                    container.appendChild(subContainer);
+                }
+            }
+        }
+    }
+
+    function renderPersonList(person, items) {
+        const container = document.getElementById('personGrid');
+        const card = document.createElement('div');
+        card.className = 'person-card';
+
+        const name = document.createElement('h3');
+        name.textContent = person;
+        card.appendChild(name);
+
+        const listContainer = document.createElement('div');
+        listContainer.className = 'list-container';
+
+        if (!items || Object.keys(items).length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-message';
+            empty.textContent = 'No items assigned';
+            empty.style.fontSize = '0.8rem';
+            empty.style.color = '#8a8a7a';
+            listContainer.appendChild(empty);
+        } else {
+            const sortedKeys = Object.keys(items).sort();
+            for (const key of sortedKeys) {
+                const item = items[key];
+                const el = renderItem(key, item, `people.${person}`);
+                listContainer.appendChild(el);
+
+                if (item.subItems) {
+                    const subContainer = document.createElement('div');
+                    subContainer.style.marginLeft = '0.5rem';
+                    for (const subKey of Object.keys(item.subItems)) {
+                        const subEl = renderItem(subKey, item.subItems[subKey], `people.${person}.subItems`, true);
+                        subContainer.appendChild(subEl);
+                    }
+                    listContainer.appendChild(subContainer);
+                }
+            }
+        }
+
+        const addArea = document.createElement('div');
+        addArea.className = 'add-item-area';
+        addArea.style.marginTop = '0.8rem';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Add item...';
+        input.id = `input-${person.replace(/\s/g, '-')}`;
+        const btn = document.createElement('button');
+        btn.textContent = '+ Add';
+        btn.addEventListener('click', function() {
+            addPersonItem(person, input.value);
+        });
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addPersonItem(person, input.value);
+            }
+        });
+        addArea.appendChild(input);
+        addArea.appendChild(btn);
+        listContainer.appendChild(addArea);
+
+        card.appendChild(listContainer);
+        container.appendChild(card);
+    }
+
+    // ============================================================
+    // FIREBASE OPERATIONS
+    // ============================================================
+    function saveCheck(path, itemId, checked) {
+        const ref = database.ref(`cottagePlanner/${path}/${itemId}/checked`);
+        ref.set(checked);
+        updateStatus('saving...');
+        ref.then(() => {
+            updateStatus('saved');
+        }).catch((error) => {
+            console.error('Error saving check:', error);
+            updateStatus('error!');
+        });
+    }
+
+    // ============================================================
+    // SIMPLIFIED DELETE FUNCTION
+    // ============================================================
+    function deleteItem(listType, itemId) {
+        if (!listType || !itemId) {
+            console.error('Missing listType or itemId');
+            return;
+        }
+
+        if (!confirm('Delete this item?')) return;
+        
+        // Build the path - use slashes instead of dots for Firebase
+        let path = listType;
+        
+        // Replace dots with slashes for Firebase paths
+        // people.Jenny Nguyen -> people/Jenny Nguyen
+        // people.Jenny Nguyen.subItems -> people/Jenny Nguyen/subItems
+        path = path.replace(/\./g, '/');
+        
+        const fullPath = `cottagePlanner/${path}/${itemId}`;
+        
+        console.log('Deleting from path:', fullPath);
+        updateStatus('deleting...');
+        
+        const ref = database.ref(fullPath);
+        ref.remove()
+            .then(() => {
+                console.log('Item deleted successfully');
+                updateStatus('deleted');
+                // Force a small refresh
+                setTimeout(() => {
+                    updateStatus('ready');
+                }, 500);
+            })
+            .catch((error) => {
+                console.error('Error deleting item:', error);
+                alert('Failed to delete item. Please try again.');
+                updateStatus('error!');
+            });
+    }
+
+    // ============================================================
+    // ADD FUNCTIONS
+    // ============================================================
+    function addItem(listType) {
+        const inputMap = {
+            'shopping': 'shoppingInput',
+            'packing': 'packingInput'
+        };
+        const input = document.getElementById(inputMap[listType]);
+        if (!input || input.value.trim() === '') return;
+        
+        const text = input.value.trim();
+        input.value = '';
+        
+        const newId = generateId();
+        const ref = database.ref(`cottagePlanner/${listType}/${newId}`);
+        ref.set({ text: text, checked: false });
+        updateStatus('adding...');
+    }
+
+    function addItemWithCategory(listType) {
+        const inputMap = {
+            'food': 'foodInput',
+            'personalShared': 'personalSharedInput'
+        };
+        const input = document.getElementById(inputMap[listType]);
+        if (!input || input.value.trim() === '') return;
+        
+        const text = input.value.trim();
+        input.value = '';
+        
+        const categories = getCategoryOrder(listType);
+        let category = null;
+        
+        if (categories.length > 0) {
+            const categoryOptions = categories.map((c, i) => `${i+1}. ${c}`).join('\n');
+            const choice = prompt(
+                `Add "${text}" to which category?\n\n${categoryOptions}\n\nEnter number (1-${categories.length}) or leave blank for no category:`
+            );
+            
+            if (choice !== null && choice !== '') {
+                const num = parseInt(choice);
+                if (num >= 1 && num <= categories.length) {
+                    category = categories[num - 1];
+                }
+            }
+        }
+        
+        const newId = generateId();
+        const itemData = { text: text, checked: false };
+        if (category) itemData.category = category;
+        
+        const ref = database.ref(`cottagePlanner/${listType}/${newId}`);
+        ref.set(itemData);
+        updateStatus('adding...');
+    }
+
+    function addItemWithCategoryAndCategory(listType, text, category) {
+        const newId = generateId();
+        const itemData = { text: text, checked: false };
+        if (category) itemData.category = category;
+        
+        const ref = database.ref(`cottagePlanner/${listType}/${newId}`);
+        ref.set(itemData);
+        updateStatus('adding...');
+    }
+
+    function addPersonItem(person, text) {
+        if (!text || text.trim() === '') return;
+        const input = document.getElementById(`input-${person.replace(/\s/g, '-')}`);
+        if (input) input.value = '';
+        
+        const newId = generateId();
+        const ref = database.ref(`cottagePlanner/people/${person}/${newId}`);
+        ref.set({ text: text.trim(), checked: false });
+        updateStatus('adding...');
+    }
+
+    // ============================================================
+    // SEED DEFAULTS
+    // ============================================================
+    function seedDefaults() {
+        const updates = {};
+        
+        for (const [listName, items] of Object.entries(DEFAULT_ITEMS)) {
+            for (const item of items) {
+                const itemData = { text: item.text, checked: false };
+                if (item.tag) itemData.tag = item.tag;
+                if (item.note) itemData.note = item.note;
+                if (item.category) itemData.category = item.category;
+                if (item.sub) {
+                    itemData.subItems = {};
+                    for (const sub of item.sub) {
+                        const subData = { text: sub.text, checked: false };
+                        if (sub.tag) subData.tag = sub.tag;
+                        itemData.subItems[sub.id] = subData;
+                    }
+                }
+                updates[`cottagePlanner/${listName}/${item.id}`] = itemData;
+            }
+        }
+
+        for (const [person, items] of Object.entries(PERSON_DEFAULTS)) {
+            for (const item of items) {
+                const itemData = { text: item.text, checked: false };
+                if (item.tag) itemData.tag = item.tag;
+                if (item.note) itemData.note = item.note;
+                if (item.sub) {
+                    itemData.subItems = {};
+                    for (const sub of item.sub) {
+                        const subData = { text: sub.text, checked: false };
+                        if (sub.tag) subData.tag = sub.tag;
+                        itemData.subItems[sub.id] = subData;
+                    }
+                }
+                updates[`cottagePlanner/people/${person}/${item.id}`] = itemData;
+            }
+        }
+
+        database.ref().update(updates).then(() => {
+            updateStatus('ready');
+        });
+    }
+
+    // ============================================================
+    // LISTEN FOR REAL-TIME UPDATES
+    // ============================================================
+    function listenToList(listType, containerId) {
+        const ref = database.ref(`cottagePlanner/${listType}`);
+        ref.on('value', (snapshot) => {
+            const val = snapshot.val() || {};
+            renderList(containerId, listType, val);
+        });
+    }
+
+    function listenToPeople() {
+        const ref = database.ref('cottagePlanner/people');
+        ref.on('value', (snapshot) => {
+            const val = snapshot.val() || {};
+            document.getElementById('personGrid').innerHTML = '';
+            for (const person of PEOPLE) {
+                renderPersonList(person, val[person] || {});
+            }
+        });
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    function init() {
+        updateStatus('loading...');
+
+        listenToList('shopping', 'shoppingList');
+        listenToList('packing', 'packingList');
+        listenToList('food', 'foodList');
+        listenToList('personalShared', 'personalSharedList');
+        listenToPeople();
+
+        const ref = database.ref('cottagePlanner');
+        ref.once('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                seedDefaults();
+            } else {
+                updateStatus('ready');
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
